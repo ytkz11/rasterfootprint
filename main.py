@@ -3,71 +3,85 @@ import os
 from osgeo import gdal, ogr, osr
 
 from raster_footprint import footprint_from_href
-
+import matplotlib.pyplot as plt
+from PIL import Image
+import numpy as np
+import cv2
 
 def footprint_from_href_info(file, holes=False, nodata=0):
+    ds = gdal.Open(file)
+    if ds is None:
+        raise Exception("无法打开文件")
+    array = ds.ReadAsArray()
+    img  = Image.open(file)
+    img_array = np.array(img)
+    img_cv2 = cv2.imread(file)
+    img_gdal_array = np.transpose(array, (1,2,0))
+    # plt.imshow(img_gdal_array),plt.show()
     footprint = footprint_from_href(        file,
-                                            densify_distance=1,
+                                            # densify_distance=1,
                                             # simplify_tolerance=0.001,
                                             holes=holes,
                                             nodata=nodata)
 
     return footprint
 
-def create_polygon(file,holes=False,nodata=0):
+def create_polygon(file, holes=False, nodata=0):
+    polygon = footprint_from_href_info(file, holes=holes, nodata=nodata)
 
-        polygon = footprint_from_href_info(file,holes=holes,nodata=nodata)
+    output_file = os.path.splitext(file)[0] + '_boundary.shp'
+    dataset = gdal.Open(file)
+    projection = dataset.GetProjection()  # Get projection information
+    driver = ogr.GetDriverByName('ESRI Shapefile')
 
-        output_file = os.path.splitext(file)[0]+'1122.shp'
-        dataset = gdal.Open(tif_path)
-        projection = dataset.GetProjection()    # 创建Shapefile
-        driver = ogr.GetDriverByName('ESRI Shapefile')
+    if os.path.exists(output_file):
+        driver.DeleteDataSource(output_file)  # Delete existing shapefile if it exists
 
-        if os.path.exists(output_file):
+    data_source = driver.CreateDataSource(output_file)
 
-            driver.DeleteDataSource(output_file)
-        data_source = driver.CreateDataSource(output_file)
+    srs = osr.SpatialReference(wkt=projection)  # Define spatial reference
+    layer = data_source.CreateLayer('boundary', srs, ogr.wkbPolygon)  # Create a polygon layer
 
-           #创建图层
-        srs = osr.SpatialReference(wkt=projection)
-        layer = data_source.CreateLayer('boundary', srs, ogr.wkbPolygon)    # 添加字段
-        field_name = ogr.FieldDefn("Name", ogr.OFTString)
-        field_name.SetWidth(24)
-        layer.CreateField(field_name)
-    # 创建多边形
-        poly = ogr.Geometry(ogr.wkbPolygon)
-    # 添加所有点位数据
-        if len(polygon['coordinates']) > 0:
-            for hole_coords in polygon['coordinates']:
-                # Ensure the hole ring has at least 4 points and is closed
-                if len(hole_coords) >= 4:
-                    hole_ring = ogr.Geometry(ogr.wkbLinearRing)
-                    for coord in hole_coords:
-                        hole_ring.AddPoint(coord[0], coord[1])
+    field_name = ogr.FieldDefn("Name", ogr.OFTString)
+    field_name.SetWidth(24)
+    layer.CreateField(field_name)  # Add field to the layer
 
-                    # Ensure the hole is closed by checking if the first and last point are the same
-                    if hole_ring.GetPoint(0) != hole_ring.GetPoint(hole_ring.GetPointCount() - 1):
-                        hole_ring.AddPoint(hole_coords[0][0], hole_coords[0][1])
+    poly = ogr.Geometry(ogr.wkbPolygon)
+    if len(polygon['coordinates']) > 4:
+        for hole_coords in polygon['coordinates']:
+            hole_ring = ogr.Geometry(ogr.wkbLinearRing)
+            for coord in hole_coords:
+                hole_ring.AddPoint(coord[0], coord[1])
+            poly.AddGeometry(hole_ring)
+    else:
+        try:
+            max_i = len(polygon['coordinates'][0])
+            target_i = 0
+            for i in range(len(polygon['coordinates'])):
+                temp_i = len(polygon['coordinates'][i])
+                if max_i < temp_i:
+                    max_i = temp_i
+                    target_i = i
 
-                    poly.AddGeometry(hole_ring)
-                else:
-                    print(f"警告: 孔洞的坐标数量不足 4 个，已跳过孔洞处理: {hole_coords}")
+            for hole_coords in polygon['coordinates'][target_i]:
+                hole_ring = ogr.Geometry(ogr.wkbLinearRing)
+                for coord in hole_coords:
+                    hole_ring.AddPoint(coord[0], coord[1])
+                poly.AddGeometry(hole_ring)
 
-                    # 创建要素
-                    #
-        feature = ogr.Feature(layer.GetLayerDefn())
-        feature.SetField("Name", "MyPolygon")
-    # 设置几何体
-    #
-        feature.SetGeometry(poly)
-    # 将要素添加到图层
-        layer.CreateFeature(feature)
-    # 清理资源
-    #
-        feature = None
-        data_source = None
-        print(f"文件已成功创建: {output_file}")
+        except:
+            print('出了问题')
 
+    feature = ogr.Feature(layer.GetLayerDefn())
+    feature.SetField("Name", "MyPolygon")
+    feature.SetGeometry(poly)
+    layer.CreateFeature(feature)  # Add feature to the layer
+
+    # Cleanup resources
+    feature = None
+    data_source = None
+    print(f"文件已成功创建: {output_file}")
 if __name__ == '__main__':
-    tif_path = r'D:\无人机\test\DJI_20230410091605_0121.tif'
-    create_polygon(tif_path,holes=True,nodata=0)
+    tif_path = r'D:\无人机\test\DJI_20230410091605_0121_hole.tif'
+    tif_path = r'D:\无人机\test\DJI_20230410091605_0121_hole_2000.tif'
+    create_polygon(tif_path,holes=1,nodata=0)

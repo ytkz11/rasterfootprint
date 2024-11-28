@@ -32,12 +32,30 @@ def create_polygon(file, holes=False, nodata=0):
     layer.CreateField(field_name)  # Add field to the layer
 
     poly = ogr.Geometry(ogr.wkbPolygon)
-    if len(polygon['coordinates']) > 0:
+    if len(polygon['coordinates']) > 4:
         for hole_coords in polygon['coordinates']:
             hole_ring = ogr.Geometry(ogr.wkbLinearRing)
             for coord in hole_coords:
                 hole_ring.AddPoint(coord[0], coord[1])
             poly.AddGeometry(hole_ring)
+    else:
+        try:
+            max_i = len(polygon['coordinates'][0])
+            target_i = 0
+            for i in range(len(polygon['coordinates'])):
+                temp_i = len(polygon['coordinates'][i])
+                if max_i < temp_i:
+                    max_i = temp_i
+                    target_i = i
+
+            for hole_coords in polygon['coordinates'][target_i]:
+                hole_ring = ogr.Geometry(ogr.wkbLinearRing)
+                for coord in hole_coords:
+                    hole_ring.AddPoint(coord[0], coord[1])
+                poly.AddGeometry(hole_ring)
+
+        except:
+            print('出了问题')
 
     feature = ogr.Feature(layer.GetLayerDefn())
     feature.SetField("Name", "MyPolygon")
@@ -61,7 +79,7 @@ def browse_files():
         for file_path in file_paths:
             try:
                 # Retrieve the parameters from the GUI
-                holes = False
+                holes = holes_var.get()
                 nodata_value = int(nodata_entry.get()) if nodata_entry.get().isdigit() else 0
                 create_polygon(file_path, holes=holes, nodata=nodata_value)  # Call create_polygon for each file
             except Exception as e:
@@ -77,7 +95,7 @@ def browse_folder():
             for file_path in tiff_files:
                 try:
                     # Retrieve the parameters from the GUI
-                    holes = False
+                    holes =  holes_var.get()
                     nodata_value = int(nodata_entry.get()) if nodata_entry.get().isdigit() else 0
                     create_polygon(file_path, holes=holes, nodata=nodata_value)
                 except Exception as e:
@@ -88,7 +106,7 @@ def browse_folder():
 
 # GUI Setup
 root = tk.Tk()
-root.title("影像有效范围创建器（生成无孔洞）")
+root.title("影像有效范围创建器")
 root.geometry("400x300")
 icon = open("gui_icon.ico", 'wb+')
 icon.write(base64.b64decode(img))  # 写入到临时文件中
@@ -106,8 +124,8 @@ btn_batch_folder.pack(pady=10)
 
 # Holes Option: Add a checkbox for holes
 holes_var = tk.BooleanVar()
-# checkbox_holes = tk.Checkbutton(root, text="保留孔洞 (Holes)", variable=holes_var)
-# checkbox_holes.pack(pady=5)
+checkbox_holes = tk.Checkbutton(root, text="保留孔洞 (Holes)", variable=holes_var)
+checkbox_holes.pack(pady=5)
 
 # NoData Value Option: Add an entry field for NoData value
 label_nodata = tk.Label(root, text="无效值 (NoData) 参数:")
