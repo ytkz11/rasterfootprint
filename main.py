@@ -3,21 +3,10 @@ import os
 from osgeo import gdal, ogr, osr
 
 from raster_footprint import footprint_from_href
-import matplotlib.pyplot as plt
-from PIL import Image
-import numpy as np
-import cv2
+
 
 def footprint_from_href_info(file, holes=False, nodata=0):
-    ds = gdal.Open(file)
-    if ds is None:
-        raise Exception("无法打开文件")
-    array = ds.ReadAsArray()
-    img  = Image.open(file)
-    img_array = np.array(img)
-    img_cv2 = cv2.imread(file)
-    img_gdal_array = np.transpose(array, (1,2,0))
-    # plt.imshow(img_gdal_array),plt.show()
+
     footprint = footprint_from_href(        file,
                                             # densify_distance=1,
                                             # simplify_tolerance=0.001,
@@ -82,6 +71,6 @@ def create_polygon(file, holes=False, nodata=0):
     data_source = None
     print(f"文件已成功创建: {output_file}")
 if __name__ == '__main__':
-    tif_path = r'D:\无人机\test\DJI_20230410091605_0121_hole.tif'
-    tif_path = r'D:\无人机\test\DJI_20230410091605_0121_hole_2000.tif'
+    tif_path = r'H:\\DJI_20230410091605_0121_hole.tif'
+    # tif_path = r'D:\无人机\test\DJI_20230410091605_0121_hole_2000.tif'
     create_polygon(tif_path,holes=1,nodata=0)
