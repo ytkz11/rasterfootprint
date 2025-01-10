@@ -87,7 +87,8 @@ def create_polygon(file, holes=False, nodata=0):
     print(f"文件已成功创建: {output_file}")
 if __name__ == '__main__':
     tif_path = r'.\raster\LC09_L2SP_138039_20230101_20230315_02_T1_SR_B2_rgb_clip_nohole.tif'
+    tif_path = r'.\raster\LC09_L2SP_138039_20230101_20230315_02_T1_SR_B2_rgb_clip.tif'
     # tif_path = r'.\raster\LC09_L2SP_138039_20230101_20230315_02_T1_SR_B2_rgb.tif'
     # tif_path = r'D:\无人机\test\DJI_20230410091605_0121.tif'
     # tif_path = r'D:\无人机\test\DJI_20230410091605_0121_hole_2000.tif'
-    create_polygon(tif_path,holes=1,nodata=0)
+    create_polygon(tif_path,holes=0,nodata=0)
