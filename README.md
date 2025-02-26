@@ -1,128 +1,60 @@
-# rasterfootprint
+```
+[中文介绍](https://github.com/ytkz11/rasterfootprint/READMEcn.md)
+```
 
-输入遥感影像的路径，生成对应的有效覆盖范围。
+## Introduction
 
-![image-20241126223932773](https://raw.githubusercontent.com/ytkz11/picture/master/image-20241126223932773.png)
+Raster Footprint is a tool designed to generate the effective coverage area of remote sensing images. Users only need to provide the path to a remote sensing image to generate its corresponding effective coverage area. The tool supports both single-file processing and batch processing modes.
 
-界面写得很简单，一共两个按钮。对应两种处理方式。
+## Features
 
-一个是单文件处理；第二个是批处理。
+- **Single File Processing**: Processes a single remote sensing image file to generate its effective coverage area.
+- **Batch Processing**: Processes all remote sensing image files in a folder to generate their effective coverage areas.
+- **Hole Support**: Supports generating effective coverage areas with holes.
+- **Multi-Coordinate System Support**: Supports images in both projected and geographic coordinate systems.
 
-单文件处理测试：
+## Usage
 
-点击第一个按钮。界面如下：
+### Single File Processing
 
-![image-20241126224451474](https://raw.githubusercontent.com/ytkz11/picture/master/image-20241126224451474.png)
+1. Open the tool interface.
+2. Click the "Select Single File" button and choose a remote sensing image file.
+3. The program runs automatically and displays a prompt window upon completion.
+4. Results can be visualized in QGIS.
 
+### Batch Processing
 
+1. Open the tool interface.
+2. Click the "Select Folder" button and choose a folder containing `.tif` files.
+3. The program runs automatically and displays a prompt window upon completion.
+4. Results can be visualized in QGIS.
 
-在处理完成后，会弹出窗口提示。
+### Hole Support
 
-批量文件处理测试：
+The modified code supports processing images with holes, ensuring that the generated polygons include inner rings (holes).
 
-点击第2个按钮。要选择的文件夹必须包含tif文件，我选择的路径是D:\test
+## Visualization in QGIS
 
-![image-20241126224652378](https://raw.githubusercontent.com/ytkz11/picture/master/image-20241126224652378.png)
-
-界面如下,选择好文件夹后，点击选择文件夹按钮：
-
-![image-20241126224302372](https://raw.githubusercontent.com/ytkz11/picture/master/image-20241126224302372.png)
-
-
-
-在处理完成后，会弹出窗口提示。如下：
-
-![image-20241126224817045](https://raw.githubusercontent.com/ytkz11/picture/master/image-20241126224817045.png)
-
-
-
-将结果放在QGIS展示，目测是否正确。
-
-
+To verify the results, load them into QGIS and visually inspect their correctness.
 
 ![image-20241126225013944](https://raw.githubusercontent.com/ytkz11/picture/master/image-20241126225013944.png)
 
 ![image-20241126224949176](https://raw.githubusercontent.com/ytkz11/picture/master/image-20241126224949176.png)
 
-# 针对含孔洞的有效范围
-
-安装footprint后，打开footprint.py，只针对footprint_from_mask函数
-
-定位到第85行，修改代码，如下：
-
-修改前：
-
-```
-reprojected = reproject_geometry(
-        densified, source_crs, destination_crs, precision=precision
-    )
-```
-
-
-
-修改后：
-
-```
-reprojected = densified
-
-```
-
-
-
-二者区别在于 ，是否进行重投影。
-
-所以 ，footprint_from_mask函数被修改为
-
-```python
-def footprint_from_mask(
-    mask: npt.NDArray[np.uint8],
-    transform: Affine,
-    source_crs: CRS,
-    *,
-    destination_crs: CRS = CRS.from_epsg(4326),
-    precision: int = DEFAULT_PRECISION,
-    densify_factor: Optional[int] = None,
-    densify_distance: Optional[float] = None,
-    simplify_tolerance: Optional[float] = None,
-    convex_hull: bool = False,
-    holes: bool = False,
-) -> Optional[Dict[str, Any]]:
-    geometry = get_mask_geometry(
-        mask, transform=transform, convex_hull=convex_hull, holes=holes
-    )
-
-    if geometry is None:
-        return None
-
-    densified = densify_geometry(
-        geometry, factor=densify_factor, distance=densify_distance
-    )
-    if source_crs == destination_crs:
-    reprojected = densified
-    simplified = simplify_geometry(reprojected, tolerance=simplify_tolerance)
-
-    return mapping(simplified)
-```
-
-修改界面，如下：
-![img.png](https://cdn.jsdelivr.net/gh/ytkz11/picture/imgs202411281150448.png)
-
-
-
-带孔洞的影像有效覆盖范围可视化结果如下：
+The visualization result of the effective coverage area with holes is shown below:
 
 ![image-20241128115448672](https://cdn.jsdelivr.net/gh/ytkz11/picture/imgs202411281154860.png)
 
-支持批量处理，结果如下：
+The result of batch processing is shown below:
 
 ![image-20241128115520778](https://cdn.jsdelivr.net/gh/ytkz11/picture/imgs202411281155111.png)
 
-
-
-支持不同坐标系的影像生成有效范围。（投影坐标系、地理坐标系都支持）
-
-测试如下：
+Support for generating effective coverage areas from images in different coordinate systems (both projected and geographic coordinate systems) has been tested as follows:
 
 ![image-20241128141453506](https://cdn.jsdelivr.net/gh/ytkz11/picture/imgs202411281414399.png)
 
 ![image-20241128141637592](https://cdn.jsdelivr.net/gh/ytkz11/picture/imgs202411281416098.png)
+
+## Conclusion
+
+Although the Raster Footprint tool has simple functionality, it is sufficient for generating the effective coverage areas of remote sensing images. Due to time constraints, the tool's features are not yet fully refined. We welcome valuable feedback and suggestions from users.

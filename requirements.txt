@@ -1,0 +1,2 @@
+GDAL==3.4.1
+raster_footprint==0.2.0
