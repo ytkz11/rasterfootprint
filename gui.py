@@ -83,6 +83,7 @@ def create_polygon(file, holes=False, nodata=0):
     print(f"File successfully created: {output_file}")
     return output_file
 
+
 def browse_files():
     # Open file dialog to select multiple files
     file_paths = filedialog.askopenfilenames(
