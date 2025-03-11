@@ -131,6 +131,9 @@ def save_footprint_to_file(footprint, output_path, format='shp', crs=None):
 def calculate_large_raster_footprint(input_path, block_size=512, overlap=50, save_path=None, save_format='shp'):
     """计算整个大影像的有效足迹，支持不同类型的nodata值，并可选保存为文件"""
     footprints = []
+    if save_path is None:
+        save_path = os.path.dirname(input_path)
+
 
     with rasterio.open(input_path) as src:
         nodata = src.nodata
@@ -177,18 +180,19 @@ def calculate_large_raster_footprint(input_path, block_size=512, overlap=50, sav
     final_footprint = final_footprint.buffer(0.1, join_style=2).buffer(-0.1, join_style=2)
 
     # 如果提供了保存路径，则保存足迹
-    # if save_path:
-    #     save_footprint_to_file(final_footprint, save_path, format=save_format, crs=srs)
+    if save_path:
+        save_file = os.path.join(save_path, os.path.splitext(os.path.basename(input_path))[0])
+        save_footprint_to_file(final_footprint, save_file, format=save_format, crs=srs)
 
     return final_footprint
 
 
 if __name__ == "__main__":
-    input_raster =  r".\img\LC09_L2SP_138039_20230101_20230315_02_T1_SR_B2_rgb_clip.tif"
-    output_vector = r"D:\tempss"  # 不需要指定扩展名，会自动添加
+    input_raster =  r"D:\GF1_FengCheng_20220726_WGS84.tif"
+    output_vector = r".\img"  # 不需要指定扩展名，会自动添加
     footprint = calculate_large_raster_footprint(
         input_raster,
-        block_size=500,
+        block_size=2000,
         overlap=50,
         save_path=output_vector,
         save_format='shp'  # 或 'shp'
